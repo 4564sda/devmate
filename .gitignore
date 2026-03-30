@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.pyc
 .venv/
+
 
 # Build artifacts
 dist/
@@ -25,9 +27,13 @@ build/
 config.toml
 
 # Runtime / generated data
+.data/
+.skills/
 workspace/
 data/vector_store/
 
 # OS files
 .DS_Store
 Thumbs.db
+
+

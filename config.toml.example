@@ -1,0 +1,28 @@
+[model]
+ai_base_url = "https://api.openai.com/v1"
+api_key = "YOUR_MODEL_API_KEY"
+model_name = "gpt-4o-mini"
+embedding_model_name = "text-embedding-3-small"
+planner_model_name = "gpt-4o-mini"
+temperature = 0.1
+max_tokens = 4000
+
+[search]
+tavily_api_key = "YOUR_TAVILY_API_KEY"
+max_results = 5
+
+[langsmith]
+langchain_tracing_v2 = true
+langchain_api_key = "YOUR_LANGSMITH_API_KEY"
+project = "devmate"
+endpoint = "https://api.smith.langchain.com"
+
+[skills]
+skills_dir = ".skills"
+
+[rag]
+docs_dir = "docs"
+vector_store_dir = ".data/vector_store"
+chunk_size = 1000
+chunk_overlap = 200
+top_k = 4
