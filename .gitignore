@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local env files
+.env
+.env.*
+
+# Sensitive local config
+config.toml
+
+# Runtime / generated data
+workspace/
+data/vector_store/
+
+# OS files
+.DS_Store
+Thumbs.db
