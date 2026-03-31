@@ -3,9 +3,15 @@ from __future__ import annotations
 import logging
 import os
 
-from devmate.config import Settings
+from devmate.config import Settings, load_settings
 
 logger = logging.getLogger(__name__)
+
+def configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
 
 def configure_langsmith(config: Settings) -> None:
     tracing_enabled = (
@@ -28,3 +34,8 @@ def configure_langsmith(config: Settings) -> None:
         config.langsmith.endpoint,
         tracing_enabled,
     )
+
+def setup_observability() -> None:
+    configure_logging()
+    config = load_settings()
+    configure_langsmith(config)

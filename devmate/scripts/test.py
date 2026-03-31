@@ -6,7 +6,7 @@ import logging
 from langchain_core.messages import HumanMessage
 from langsmith import traceable
 
-from devmate.config import load_config
+from devmate.config import load_settings
 from devmate.llm import build_model_registry
 from devmate.observability import configure_langsmith
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @traceable(name="devmate_llm_smoke_test", run_type="chain")
 def run_llm_smoke_test(user_prompt: str) -> str:
-    config = load_config()
+    config = load_settings()
     registry = build_model_registry(config)
     model = registry.primary_llm
 
@@ -42,7 +42,7 @@ def main() -> None:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
 
-    config = load_config()
+    config = load_settings()
     configure_langsmith(config)
 
     logger.info("Starting LangSmith-enabled LLM smoke test...")
