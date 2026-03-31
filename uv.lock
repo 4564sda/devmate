@@ -72,13 +72,17 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "langchain" },
+    { name = "langchain-core" },
     { name = "langchain-openai" },
+    { name = "langsmith" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "langchain", specifier = ">=1.2.10" },
+    { name = "langchain-core", specifier = ">=1.2.23" },
     { name = "langchain-openai", specifier = ">=0.3.0" },
+    { name = "langsmith", specifier = ">=0.3.0" },
 ]
 
 [[package]]

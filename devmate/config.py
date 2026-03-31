@@ -1,136 +1,122 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
 import tomllib
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_PATH = Path("config.toml")
-
 @dataclass(slots=True)
-class ModelConfig:
+class ModelSettings:
     ai_base_url: str
     api_key: str
     model_name: str
     embedding_model_name: str
     planner_model_name: str
-    temperature: float
-    max_tokens: int
+    temperature: float = 0.1
+    max_tokens: int = 8192
 
 @dataclass(slots=True)
-class SearchConfig:
-    tavily_api_key: str
-    max_results: int
+class SearchSettings:
+    tavily_api_key: str = ""
+    max_results: int = 5
 
 @dataclass(slots=True)
-class LangSmithConfig:
-    langchain_tracing_v2: bool
-    langchain_api_key: str
-    project: str
-    endpoint: str
+class LangSmithSettings:
+    langchain_tracing_v2: bool = True
+    langchain_api_key: str = ""
+    project: str = "devmate"
+    endpoint: str = "https://api.smith.langchain.com"
 
 @dataclass(slots=True)
-class SkillsConfig:
+class SkillsSettings:
     skills_dir: str = ".skills"
 
 @dataclass(slots=True)
-class RagConfig:
-    docs_dir: str
-    vector_store_dir: str
-    chunk_size: int
-    chunk_overlap: int
-    top_k: int
+class RagSettings:
+    docs_dir: str = "docs"
+    vector_store_dir: str = ".data/vector_store"
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
+    top_k: int = 4
 
 @dataclass(slots=True)
 class Settings:
-    model: ModelConfig
-    search: SearchConfig
-    langsmith: LangSmithConfig
-    skills: SkillsConfig
-    rag: RagConfig
+    model: ModelSettings
+    search: SearchSettings
+    langsmith: LangSmithSettings
+    skills: SkillsSettings
+    rag: RagSettings
 
-class ConfigError(Exception):
-    """Raised when the configuration file is missing or invalid."""
-
-def _require_section(data: dict, section_name: str) -> dict:
-    section = data.get(section_name)
-    if not isinstance(section, dict):
-        raise ConfigError(f"Missing or invalid section: [{section_name}]")
-    return section
-
-def _require_value(section: dict, key: str, section_name: str):
-    value = section.get(key)
-    if value is None:
-        raise ConfigError(f"Missing required key '{key}' in section [{section_name}]")
-    return value
-
-def load_settings(config_path: str | Path = DEFAULT_CONFIG_PATH) -> Settings:
-    path = Path(config_path)
-
+def _read_toml(path: Path) -> dict[str, Any]:
     if not path.exists():
-        raise ConfigError(
-            f"Config file not found: {path}. "
-            "Please copy config.toml.example to config.toml and update values."
-        )
-
+        raise FileNotFoundError(f"Config file not found: {path}")
     with path.open("rb") as file:
-        raw_data = tomllib.load(file)
+        return tomllib.load(file)
 
-    model_section = _require_section(raw_data, "model")
-    search_section = _require_section(raw_data, "search")
-    langsmith_section = _require_section(raw_data, "langsmith")
-    skills_section = _require_section(raw_data, "skills")
-    rag_section = _require_section(raw_data, "rag")
+def _get_secret(raw_value: str, env_name: str) -> str:
+
+    return os.getenv(env_name, raw_value)
+
+def load_config(path: str = "config.toml") -> Settings:
+    config_path = Path(path)
+    raw = _read_toml(config_path)
+
+    model_raw = raw.get("model", {})
+    search_raw = raw.get("search", {})
+    langsmith_raw = raw.get("langsmith", {})
+    skills_raw = raw.get("skills", {})
+    rag_raw = raw.get("rag", {})
 
     settings = Settings(
-        model=ModelConfig(
-            ai_base_url=str(_require_value(model_section, "ai_base_url", "model")),
-            api_key=str(_require_value(model_section, "api_key", "model")),
-            model_name=str(_require_value(model_section, "model_name", "model")),
-            embedding_model_name=str(
-                _require_value(model_section, "embedding_model_name", "model")
-            ),
-            planner_model_name=str(
-                _require_value(model_section, "planner_model_name", "model")
-            ),
-            temperature=float(_require_value(model_section, "temperature", "model")),
-            max_tokens=int(_require_value(model_section, "max_tokens", "model")),
+        model=ModelSettings(
+            ai_base_url=model_raw["ai_base_url"],
+            api_key=_get_secret(model_raw.get("api_key", ""), "DEVMATE_MODEL_API_KEY"),
+            model_name=model_raw["model_name"],
+            embedding_model_name=model_raw["embedding_model_name"],
+            planner_model_name=model_raw["planner_model_name"],
+            temperature=float(model_raw.get("temperature", 0.1)),
+            max_tokens=int(model_raw.get("max_tokens", 8192)),
         ),
-        search=SearchConfig(
-            tavily_api_key=str(
-                _require_value(search_section, "tavily_api_key", "search")
+        search=SearchSettings(
+            tavily_api_key=_get_secret(
+                search_raw.get("tavily_api_key", ""),
+                "TAVILY_API_KEY",
             ),
-            max_results=int(_require_value(search_section, "max_results", "search")),
+            max_results=int(search_raw.get("max_results", 5)),
         ),
-        langsmith=LangSmithConfig(
+        langsmith=LangSmithSettings(
             langchain_tracing_v2=bool(
-                _require_value(
-                    langsmith_section,
-                    "langchain_tracing_v2",
-                    "langsmith",
-                )
+                langsmith_raw.get("langchain_tracing_v2", True)
             ),
-            langchain_api_key=str(
-                _require_value(langsmith_section, "langchain_api_key", "langsmith")
+            langchain_api_key=_get_secret(
+                langsmith_raw.get("langchain_api_key", ""),
+                "LANGCHAIN_API_KEY",
             ),
-            project=str(_require_value(langsmith_section, "project", "langsmith")),
-            endpoint=str(_require_value(langsmith_section, "endpoint", "langsmith")),
+            project=langsmith_raw.get("project", "devmate"),
+            endpoint=langsmith_raw.get(
+                "endpoint",
+                "https://api.smith.langchain.com",
+            ),
         ),
-        skills=SkillsConfig(
-            skills_dir=str(_require_value(skills_section, "skills_dir", "skills"))
+        skills=SkillsSettings(
+            skills_dir=skills_raw.get("skills_dir", ".skills"),
         ),
-        rag=RagConfig(
-            docs_dir=str(_require_value(rag_section, "docs_dir", "rag")),
-            vector_store_dir=str(
-                _require_value(rag_section, "vector_store_dir", "rag")
+        rag=RagSettings(
+            docs_dir=rag_raw.get("docs_dir", "docs"),
+            vector_store_dir=rag_raw.get(
+                "vector_store_dir",
+                ".data/vector_store",
             ),
-            chunk_size=int(_require_value(rag_section, "chunk_size", "rag")),
-            chunk_overlap=int(_require_value(rag_section, "chunk_overlap", "rag")),
-            top_k=int(_require_value(rag_section, "top_k", "rag")),
+            chunk_size=int(rag_raw.get("chunk_size", 1000)),
+            chunk_overlap=int(rag_raw.get("chunk_overlap", 200)),
+            top_k=int(rag_raw.get("top_k", 4)),
         ),
     )
 
-    logger.info("Configuration loaded from %s", path)
+    logger.info("Configuration loaded from %s", config_path)
     return settings
